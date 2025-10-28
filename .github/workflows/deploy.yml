@@ -33,53 +33,69 @@ jobs:
       - name: Prepare deployment
         run: |
           mkdir -p build
+          # Копируем существующее содержимое gh-pages (предыдущие версии)
           if [ -d "gh-pages-content" ]; then
             cp -r gh-pages-content/* build/ || true
           fi
+          
+          # Создаем папку для новой версии и копируем туда файлы
           mkdir -p build/v${{ steps.get_version.outputs.version }}
           cp -r ./ru ./en ./index.html ./build/v${{ steps.get_version.outputs.version }}/
+          
+          # Копируем файлы для актуальной версии
           cp -r ./ru ./en ./index.html ./build/
 
       - name: Generate versions list
         id: generate_versions
         run: |
-          # Создаем список всех версий
-          VERSIONS=$(find build -maxdepth 1 -name "v*" -type d | sort -Vr | xargs -I {} basename {})
-          echo "versions<<EOF" >> $GITHUB_OUTPUT
-          echo "$VERSIONS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Update main page with versions
-        run: |
-          # Создаем HTML для списка версий
-          VERSIONS_HTML=""
-          for version in ${{ steps.generate_versions.outputs.versions }}; do
-            VERSIONS_HTML="${VERSIONS_HTML}<li><a href=\"${version}/\">Версия ${version}</a></li>"
+          # Находим все папки с версиями, сортируем по версии в обратном порядке
+          VERSIONS=$(find build -maxdepth 1 -name "v*" -type d | sort -Vr)
+          VERSION_NAMES=""
+          for dir in $VERSIONS; do
+            if [ -n "$dir" ] && [ "$dir" != "build" ]; then
+              version_name=$(basename "$dir")
+              if [ -n "$VERSION_NAMES" ]; then
+                VERSION_NAMES="$VERSION_NAMES $version_name"
+              else
+                VERSION_NAMES="$version_name"
+              fi
+            fi
           done
+          
+          echo "Found versions: $VERSION_NAMES"
+          echo "versions=$VERSION_NAMES" >> $GITHUB_OUTPUT
 
-          # Обновляем index.html
-          cat > build/index.html << EOF
-          <!DOCTYPE html>
-          <html lang="ru">
-          <head>
-              <meta charset="UTF-8">
-              <title>Главная страница</title>
-          </head>
-          <body>
-              <h1>Выберите язык / Choose language</h1>
-              <ul>
-                  <li><a href="ru/">Русский</a></li>
-                  <li><a href="en/">English</a></li>
-              </ul>
+      - name: Update main page with versions list
+        run: |
+          # Создаем временный файл с обновленным содержимым
+          TEMP_FILE=$(mktemp)
+          
+          # Читаем существующий index.html и добавляем список версий перед закрывающим тегом body
+          awk -v versions="${{ steps.generate_versions.outputs.versions }}" '
+          /<\/body>/ {
+              # Генерируем HTML для списка версий
+              print "    <h2>Доступные версии сайта:</h2>"
+              print "    <ul>"
+              print "      <li><a href=\"./\">Текущая версия (последняя)</a></li>"
               
-              <h2>Доступные версии сайта:</h2>
-              <ul>
-                  <li><a href="./">Текущая версия (последняя)</a></li>
-                  $VERSIONS_HTML
-              </ul>
-          </body>
-          </html>
-          EOF
+              # Разбиваем строку с версиями на массив
+              split(versions, version_arr, " ")
+              for (i in version_arr) {
+                  version = version_arr[i]
+                  if (version != "") {
+                      print "      <li><a href=\"" version "/\">Версия " version "</a></li>"
+                  }
+              }
+              
+              print "    </ul>"
+          }
+          { print }
+          ' build/index.html > "$TEMP_FILE"
+          
+          # Заменяем оригинальный файл
+          mv "$TEMP_FILE" build/index.html
+          
+          echo "Main page updated with versions list"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
