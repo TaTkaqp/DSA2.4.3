@@ -3,12 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Главная страница</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; }
+        h2 { color: #666; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin: 10px 0; }
+        a { text-decoration: none; color: #0366d6; padding: 5px 10px; border: 1px solid #0366d6; border-radius: 3px; display: inline-block; }
+        a:hover { background-color: #0366d6; color: white; }
+        .section { margin-bottom: 30px; }
+    </style>
 </head>
 <body>
-    <h1>Выберите язык / Choose language</h1>
-    <ul>
-        <li><a href="ru/">Русский</a></li>
-        <li><a href="en/">English</a></li>
-    </ul>
+    <div class="section">
+        <h1>Добро пожаловать! / Welcome!</h1>
+        <p>Выберите язык / Choose language:</p>
+        <ul>
+            <li><a href="ru/">🇷🇺 Русская версия</a></li>
+            <li><a href="en/">🇬🇧 English version</a></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Доступные версии сайта / Available versions:</h2>
+        <ul id="versions-list">
+            <!-- Список версий будет автоматически добавлен здесь при деплое -->
+            <li><a href="./">🚀 Текущая версия (последняя) / Current version (latest)</a></li>
+        </ul>
+    </div>
+
+    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888;">
+        <p>Автоматически развернуто с помощью GitHub Pages</p>
+    </footer>
 </body>
 </html>
